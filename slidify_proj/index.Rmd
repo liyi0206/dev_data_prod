@@ -1,0 +1,113 @@
+---
+title       : Investor's Helper helps investors!
+subtitle    : Pitch for ShinyApp Investor's Helper
+author      : Yi Li
+job         : Data Engineer
+framework   : io2012   # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow  # {tomorrow,solarized_light}
+widgets     : [bootstrap,quiz,shiny,interactive]  # {mathjax, quiz, bootstrap}
+ext_widgets : {rCharts: [libraries/nvd3, libraries/morris,libraries/polycharts]}
+mode        : selfcontained  # {standalone, draft}
+
+---
+## Why we need it?
+1. investors need a quick and straightforward access to the individual stock prices, comparison with the market, and its technical indicators, to make investment decisions;
+2. from the app, investors could get the latest stock price, or all the listed companies, with all the scaled major indices, and all the calculated technical indicators, in just one second! 
+
+Should I invest on Apple, Google, Amazon, Microsoft or Facebook? Let's try and see!
+
+--- 
+## How to use it?
+1. Investors may simply enter a ticker in the text box, select a period and submit, you will see the daily stock price and trading volumne plots of the specified ticker, period. The default ticker in the app is AAPL (Apple), and default period is 2014-01-01 to 2014-06-30. 
+Notice the plots are based on the adjusted close price, so the stock splits have been taken care of;
+2. Investors may click on one of the major indices, to add its plot to the security plot and make a comparison. Notice the index is scaled to start from the same value as the security, in order for investors to have a straight-forward vision of whether the security is outperforming the market; 
+3. Investors may choose any of the technical overlays, to add their plots to the security plot and make a investment decision. As the Moving Averages and Bollinger Bands are calculated on trailing prices averages, their plots are some days lagged from the starting point. The interaction between the security price itself and its technical overlays shows the possible future trend; 
+4. The daily trading volume plot is added below the main chart as well, as it is one of the most important information; 
+
+---
+### Take AAPL for example I - with index overlays
+#### "Looks like in this half year Apple outperformed the market a lot!"
+```{r,echo=FALSE}
+str=paste("http://ichart.yahoo.com/table.csv?s=aapl&a=0&b=1&c=2014&d=5&e=30&f=2014&g=d&ignore=.csv")
+con=url(str)
+htmlCode=readLines(con)
+close(con)
+date<-rep(0,length(htmlCode))
+price<-rep(0,length(htmlCode))
+for (i in 2:length(htmlCode)) {
+  tmp=htmlCode[i]
+  tmp2=unlist(strsplit(tmp,","))
+  date[length(htmlCode)-i+2]=tmp2[1]
+  price[length(htmlCode)-i+2]=tmp2[7]
+}
+date=as.Date(date[2:length(htmlCode)])
+price=as.numeric(price[2:length(htmlCode)])
+
+str=paste("http://ichart.yahoo.com/table.csv?s=^gspc&a=0&b=1&c=2014&d=5&e=30&f=2014&g=d&ignore=.csv")
+con=url(str)
+htmlCode=readLines(con)
+close(con)
+date<-rep(0,length(htmlCode))
+idx<-rep(0,length(htmlCode))
+for (i in 2:length(htmlCode)) {
+  tmp=htmlCode[i]
+  tmp2=unlist(strsplit(tmp,","))
+  date[length(htmlCode)-i+2]=tmp2[1]
+  idx[length(htmlCode)-i+2]=tmp2[7]
+}
+date=as.Date(date[2:length(htmlCode)])
+idx=as.numeric(idx[2:length(htmlCode)])
+scalar=idx[1]/price[1]
+idx_=idx/scalar
+
+# par(mfrow=c(2,1)) 
+
+plot(date,price, type = "l",col='black')
+lines(date,idx_, col="orange")
+title("stock price")
+legend("topleft", c("AAPL","S&P 500"),lty=c(1,1),col=c("black","orange"))
+
+# plot(date,volume, type = "h")
+
+```
+
+---
+### Take AAPL for example II - with technical overlays
+#### "It is still in its moving up range, and so worth investing!"
+```{r,echo=FALSE}
+ticker="AAPL"
+str=paste("http://ichart.yahoo.com/table.csv?s=",ticker,"&a=0&b=1&c=2014&d=5&e=30&f=2014&g=d&ignore=.csv")
+con=url(str)
+htmlCode=readLines(con)
+close(con)
+date<-rep(0,length(htmlCode))
+price<-rep(0,length(htmlCode))
+volume<-rep(0,length(htmlCode))
+for (i in 2:length(htmlCode)) {
+  tmp=htmlCode[i]
+  tmp2=unlist(strsplit(tmp,","))
+  date[length(htmlCode)-i+2]=tmp2[1]
+  price[length(htmlCode)-i+2]=tmp2[7]
+  volume[length(htmlCode)-i+2]=tmp2[6]
+}
+date=as.Date(date[2:length(htmlCode)])
+price=as.numeric(price[2:length(htmlCode)])
+volume=as.numeric(volume[2:length(htmlCode)])
+
+# par(mfrow=c(2,1)) 
+
+plot(date,price, type = "l",col='black')
+lines(date[20:length(price)],ma5[20:length(price)], col="pink")
+lines(date[20:length(price)],ma10[20:length(price)], col="plum")
+lines(date[20:length(price)],bb1[20:length(price)], col="grey")
+lines(date[20:length(price)],bb2[20:length(price)], col="grey")
+title("stock price")
+legend("topleft", c(ticker,"5 Day Moving Avg","10 Day Moving Avg","Bollinger Bands"),
+       lty=c(1,1,1,1),col=c("black","pink","plum","grey"))
+
+# plot(date,volume, type = "h")
+
+```
+
+
